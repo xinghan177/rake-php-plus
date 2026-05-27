@@ -22,5 +22,5 @@ jobs:
       - name: Lychee link checker
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --no-progress --verbose './**/*.md'
+          args: --no-progress --verbose --exclude-file .lycheeignore './**/*.md'
           fail: true
