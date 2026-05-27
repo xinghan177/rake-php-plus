@@ -1,0 +1,24 @@
+name: Markdown link check
+
+on:
+  pull_request:
+    paths:
+      - '**/*.md'
+      - '.github/workflows/markdown-link-check.yml'
+  push:
+    branches: [master]
+    paths:
+      - '**/*.md'
+
+jobs:
+  lychee:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lychee link checker
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress --verbose './**/*.md'
+          fail: true

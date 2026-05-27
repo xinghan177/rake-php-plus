@@ -119,7 +119,87 @@ python -m webwright.run.cli \
 - **網站防爬**:Cloudflare、Google reCAPTCHA 等仍會擋,跟一般 Playwright 自動化相同的反爬問題都會遇到
 - **Headless vs headed**:debug 時打開 headed mode,正式跑再切 headless
 
-## 十、後續可探索方向
+## 十、故障排除 / FAQ
+
+### 1. `playwright install chromium` 失敗 / 缺 system dependencies
+
+```bash
+# Linux(Ubuntu/Debian)— 缺 libnss3、libatk-bridge 等
+sudo playwright install-deps chromium
+
+# macOS — 通常一次成功;若失敗
+xcode-select --install
+
+# Windows — 以系統管理員身分執行 terminal 再重試
+```
+
+### 2. 429 / API rate limit
+
+- Dry run 先切便宜 model(Claude Haiku、GPT-mini 系列)壓低 token 用量
+- LLM SDK 內建 exponential backoff retry;遇到持續 429 申請更高 tier
+- 任務拆細,單次 trajectory 不要超過 100 步
+
+### 3. Proxy / corporate firewall
+
+```bash
+export HTTPS_PROXY=http://proxy.example.com:8080
+export HTTP_PROXY=http://proxy.example.com:8080
+```
+
+Playwright 走 proxy 需要在 launch options 額外加參數(寫在 `base.yaml` 的 launch_args 內):
+
+```yaml
+launch_args:
+  - "--proxy-server=http://proxy.example.com:8080"
+```
+
+### 4. reCAPTCHA / Cloudflare 擋下
+
+Webwright 本身**不繞過**人機驗證。實務做法:
+
+- 切 **headed mode**,人工過完驗證再讓 agent 接手
+- 用 user data dir 重用 cookie / session,避免每次重新驗證
+- 進階:在產出的 Playwright code 上接 [`playwright-extra`](https://github.com/berstend/puppeteer-extra/tree/master/packages/playwright-extra) + stealth plugin
+
+### 5. Headed vs headless 切換
+
+在 model / environment config 設:
+
+```yaml
+headless: false   # debug 時打開瀏覽器看 agent 在幹嘛
+# headless: true  # 正式批次跑切回 true
+```
+
+### 6. 任務跑很久 / 卡死
+
+到 `outputs/<task-id>/` 看 trajectory log,通常 agent 卡在某頁不知如何操作。解法:
+
+- 把 task description 拆細(分階段給)
+- `--start-url` 直接給更具體的 landing page,跳過導航
+- 改 prompt 加 hint(例如「按右上角的 Search 按鈕」)
+
+### 7. 產出的 Playwright code 想脫離 LLM 重跑
+
+```bash
+cd outputs/<task-id>
+python <generated-script>.py
+```
+
+跑成功後可以納入 cron / GitHub Actions,完全不再 call LLM,長期成本歸零。
+
+### 8. 多任務並行
+
+```bash
+# Terminal A
+python -m webwright.run.cli ... --task-id taskA -o outputs/parallel &
+
+# Terminal B
+python -m webwright.run.cli ... --task-id taskB -o outputs/parallel &
+```
+
+注意整體 API rate limit;CPU / RAM 隨 Chromium 實例數線性上升。
+
+## 十一、後續可探索方向
 
 - [ ] 把跑出來的 Playwright 程式 cron 化(脫離 LLM,純自動化)
 - [ ] 自訂 model backend(例如接本機 Ollama)
