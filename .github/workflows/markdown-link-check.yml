@@ -5,10 +5,12 @@ on:
     paths:
       - '**/*.md'
       - '.github/workflows/markdown-link-check.yml'
+      - '.lycheeignore'
   push:
     branches: [master]
     paths:
       - '**/*.md'
+      - '.lycheeignore'
 
 jobs:
   lychee:

@@ -1,0 +1,2 @@
+# RFC 2606 reserved domains used as placeholders in documentation
+^https?://([a-z0-9-]+\.)?example\.(com|net|org)(:[0-9]+)?(/.*)?$
